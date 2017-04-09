@@ -1,0 +1,95 @@
+[
+ {
+  "kind" : "module",
+  "file" : "main.d",
+  "members" : [
+   {
+    "name" : "std.conv",
+    "kind" : "import",
+    "line" : 32,
+    "char" : 8,
+    "protection" : "private",
+    "selective" : [
+     "to"
+    ]
+   },
+   {
+    "name" : "std.socket",
+    "kind" : "import",
+    "line" : 33,
+    "char" : 8,
+    "protection" : "private"
+   },
+   {
+    "name" : "std.stdio",
+    "kind" : "import",
+    "line" : 34,
+    "char" : 8,
+    "protection" : "private"
+   },
+   {
+    "name" : "std.concurrency",
+    "kind" : "import",
+    "line" : 35,
+    "char" : 8,
+    "protection" : "private"
+   },
+   {
+    "name" : "core.thread",
+    "kind" : "import",
+    "line" : 36,
+    "char" : 8,
+    "protection" : "private"
+   },
+   {
+    "name" : "processSocket",
+    "kind" : "variable",
+    "line" : 38,
+    "char" : 15,
+    "storageClass" : [
+     "shared"
+    ],
+    "deco" : "OC3std6socket6Socket",
+    "originalType" : "Socket"
+   },
+   {
+    "name" : "handles",
+    "kind" : "variable",
+    "line" : 40,
+    "char" : 20,
+    "storageClass" : [
+     "shared"
+    ],
+    "deco" : "OHiC3std6socket6Socket",
+    "originalType" : "Socket[int]"
+   },
+   {
+    "name" : "main",
+    "kind" : "function",
+    "line" : 42,
+    "char" : 6,
+    "deco" : "FZv",
+    "endline" : 46,
+    "endchar" : 1
+   },
+   {
+    "name" : "connectToProcessor",
+    "kind" : "function",
+    "line" : 48,
+    "char" : 6,
+    "deco" : "FZv",
+    "endline" : 65,
+    "endchar" : 1
+   },
+   {
+    "name" : "listenForClients",
+    "kind" : "function",
+    "line" : 67,
+    "char" : 6,
+    "deco" : "FZv",
+    "endline" : 92,
+    "endchar" : 1
+   }
+  ]
+ }
+]

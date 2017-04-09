@@ -1,0 +1,16 @@
+<DProject>
+ <ProjectGuid>63f4d339-35b3-4abe-a5a4-787ae5639b3c</ProjectGuid>
+ <Config name="Debug" platform="Win32">
+  <!-- default to defaults -->
+ </Config>
+ <Config name="Release" platform="Win32">
+  </Config>
+ <Config name="Debug" platform="x64">
+  <!-- default to defaults -->
+ </Config>
+ <Config name="Release" platform="x64">
+  </Config>
+ <Folder name="web_server_front">
+  <File path="main.d" />
+ </Folder>
+</DProject>
