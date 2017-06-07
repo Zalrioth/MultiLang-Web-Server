@@ -4,10 +4,7 @@ import std.file;
 import std.json;
 import std.conv : to;
 import core.thread;
-//import core.stdc.time;
-//import std.c.time;
 
-// figure out way to link all 3 languages
 //https://stackoverflow.com/questions/1630597/how-to-use-a-c-library-from-d
 //https://stackoverflow.com/questions/10062750/call-cc-from-d-language
 //https://stackoverflow.com/questions/27607130/undefined-reference-to-dlsym-and-dlopen
@@ -29,8 +26,8 @@ import core.thread;
 //http://www.digitalmars.com/d/archives/digitalmars/D/learn/Read_integer_from_console_and_sleep_35542.html
 
 extern (C) void runMain(short port);
-extern (C) void sendData(int client, char* message);
-extern (C) void sendMessage(int client, char* message, long length);
+extern (C) void sendMessage(int client, char* message);
+extern (C) void sendData(int client, char* message, long length);
 extern (C) void shutdownClient(int client);
 extern (C) char* readFile(char* request, long* length);
 
@@ -48,7 +45,8 @@ void main()
     immutable JSONValue settings = parseJSON(readText("settings.conf"));
 
     immutable JSONValue portCheck = settings["Port"];
-    short port;
+
+    short port = 8808;
 
     if (portCheck.type() == JSON_TYPE.INTEGER)
     {
@@ -56,10 +54,10 @@ void main()
     }
     else
     {
-        writeln("Error: incorrect port format.");
-        //port = to!short(portCheck.str);
+        writeln("Error: incorrect port format, defaulting to 8808.");
     }
 
+    // TODO: Change hard coding to dynamic
     Item testItem;
     char[] asdasd = "html/index.html\0".dup;
     testItem.data = readFile(asdasd.ptr, &testItem.length);
@@ -122,27 +120,12 @@ extern (C) int checkCache(int client, char[] request)
         return -1;
     }
 
-    /*char[] serv1 = "HTTP/1.0 200 OK\n".dup;
-    char[] serv2 = "Server: Ingot\n".dup;
-    string fileSize = "Content-length: " ~ to!string(dataLength) ~ "\n";
-    char[] serv3 = fileSize.dup;
-    char[] serv4 = "Content-Type: text/html\n".dup;
-    char[] serv5 = "Connection: close\n\n".dup;
-    
-    sendData(client, serv1.ptr);
-    sendData(client, serv2.ptr);
-    sendData(client, serv3.ptr);
-    sendData(client, serv4.ptr);
-    sendData(client, serv5.ptr);
-    sendMessage(client, data, dataLength);*/
-
     char[] sending = ("HTTP/1.0 200 OK\r\n" ~ "Server: Ingot\r\n" ~ "Content-length: " ~ to!string(dataLength)~ "\r\n"
     ~ "Content-Type: text/html\r\n" ~ "Connection: close\r\n\r\n").dup;
 
-    sendData(client, sending.ptr);
-    sendMessage(client, data, dataLength);
+    sendMessage(client, sending.ptr);
+    sendData(client, data, dataLength);
 
-    //Thread.sleep(dur!("seconds")(1));
     shutdownClient(client);
     return 1;
 }

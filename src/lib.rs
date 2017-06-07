@@ -7,15 +7,13 @@ use std::io::BufReader;
 use std::ffi::CString;
 use std::ffi::CStr;
 use std::os::raw::c_char;
-use std::time::Duration;
-use std::thread;
 
 //https://stackoverflow.com/questions/24145823/rust-ffi-c-string-handling
 //https://jvns.ca/blog/2016/01/18/calling-c-from-rust/
 
 extern "C" {
-    pub fn sendData(client: u32, message: *const c_char);
-    pub fn sendMessage(client: u32, message: *const c_char, length: usize);
+    pub fn sendMessage(client: u32, message: *const c_char);
+    pub fn sendData(client: u32, message: *const c_char, length: usize);
     pub fn shutdownClient(client: u32);
 }
 
@@ -41,13 +39,13 @@ pub extern "C" fn handle_client(client: u32, request: *const c_char) {
     // send http version
     let http_version = CString::new("HTTP/1.0 200 OK\r\n").unwrap();
     unsafe {
-        sendData(client, http_version.as_ptr());
+        sendMessage(client, http_version.as_ptr());
     }
 
     // Server
     let http_version = CString::new("Server: Ingot\r\n").unwrap();
     unsafe {
-        sendData(client, http_version.as_ptr());
+        sendMessage(client, http_version.as_ptr());
     }
 
     // send content length
@@ -57,7 +55,7 @@ pub extern "C" fn handle_client(client: u32, request: *const c_char) {
     //let content_length = CString::from(foo.as_str().unwrap()).unwrap();
     let content_length = CString::new(foo).unwrap();
     unsafe {
-        sendData(client, content_length.as_ptr());
+        sendMessage(client, content_length.as_ptr());
     }
 
     // send content type
@@ -65,35 +63,34 @@ pub extern "C" fn handle_client(client: u32, request: *const c_char) {
     if seek_file == "/favicon.ico" {
         let http_version = CString::new("Content-Type: image/x-icon\r\n").unwrap();
         unsafe {
-            sendData(client, http_version.as_ptr());
+            sendMessage(client, http_version.as_ptr());
         }
         //t_stream.write(&http_version.into_bytes()).unwrap();
     } else {
         let http_version = CString::new("Content-Type: text/html\r\n").unwrap();
         unsafe {
-            sendData(client, http_version.as_ptr());
+            sendMessage(client, http_version.as_ptr());
         }
         //t_stream.write(&http_version.into_bytes()).unwrap();
     }
 
     let http_version = CString::new("Content-Type: text/html\r\n").unwrap();
     unsafe {
-        sendData(client, http_version.as_ptr());
+        sendMessage(client, http_version.as_ptr());
     }
 
     // send connection close
     let http_version = CString::new("Connection: close\r\n\r\n").unwrap();
     unsafe {
-        sendData(client, http_version.as_ptr());
+        sendMessage(client, http_version.as_ptr());
     }
     let contents_num = contents.len();
     unsafe {
         let send_test = CString::from_vec_unchecked(contents);
 
         // send data
-        sendMessage(client, send_test.as_ptr(), contents_num);
+        sendData(client, send_test.as_ptr(), contents_num);
     }
-    //thread::sleep(Duration::from_secs(1));
     unsafe {
         shutdownClient(client);
     }
