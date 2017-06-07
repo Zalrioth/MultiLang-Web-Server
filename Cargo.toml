@@ -1,0 +1,10 @@
+[package]
+name = "web_server"
+version = "0.1.0"
+authors = ["Zalrioth <nicholasbedner@gmail.com>"]
+
+[dependencies]
+
+[lib]
+name = "server"
+crate-type = ["staticlib"]
