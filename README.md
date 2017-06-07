@@ -6,6 +6,7 @@ Currently only for Linux, other operating systems are planned.
 Build and run with make
 
 Requirements:
-	-Rust(Cargo)
-	-DMD
-	-GCC
+Markup :
+	*Rust(Cargo)
+	*DMD
+	*GCC
