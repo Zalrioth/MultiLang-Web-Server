@@ -26,7 +26,7 @@
 //https://stackoverflow.com/questions/8874021/close-socket-directly-after-send-unsafe
 //https://github.com/labcoder/simple-webserver/blob/master/server.c
 //http://blog.manula.org/2011/05/writing-simple-web-server-in-c.html
-s
+
 extern void handle_client(int client, char request[]);
 extern int checkCache(int client, char request[]);
 
