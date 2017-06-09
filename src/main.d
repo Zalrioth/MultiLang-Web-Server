@@ -67,26 +67,6 @@ void main()
     testItem2.data = readFile(asdasd2.ptr, &testItem2.length);
     cache["/"] = cast(shared)testItem2;
 
-    Item testItem3;
-    char[] asdasd3 = "html/mario.png\0".dup;
-    testItem3.data = readFile(asdasd3.ptr, &testItem3.length);
-    cache["/mario.png"] = cast(shared)testItem3;
-
-    Item testItem4;
-    char[] asdasd4 = "html/shrek.png\0".dup;
-    testItem4.data = readFile(asdasd4.ptr, &testItem4.length);
-    cache["/shrek.png"] = cast(shared)testItem4;
-
-    Item testItem5;
-    char[] asdasd5 = "html/sanic.png\0".dup;
-    testItem5.data = readFile(asdasd5.ptr, &testItem5.length);
-    cache["/sanic.png"] = cast(shared)testItem5;
-
-    Item testItem6;
-    char[] asdasd6 = "html/doge.png\0".dup;
-    testItem6.data = readFile(asdasd6.ptr, &testItem6.length);
-    cache["/doge.png"] = cast(shared)testItem6;
-
     Item testItem7;
     char[] asdasd7 = "html/favicon.ico\0".dup;
     testItem7.data = readFile(asdasd7.ptr, &testItem7.length);

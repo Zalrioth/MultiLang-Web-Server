@@ -2,6 +2,7 @@
 
 use std::io::prelude::*;
 use std::fs::File;
+use std::path::Path;
 use std::str;
 use std::io::BufReader;
 use std::ffi::CString;
@@ -14,6 +15,7 @@ use std::os::raw::c_char;
 //https://www.reddit.com/r/rust/comments/3t2pmy/how_do_i_get_the_last_two_characters_in_a_string/
 //https://users.rust-lang.org/t/how-to-get-a-substring-of-a-string/1351
 //https://stackoverflow.com/questions/41037114/why-do-i-get-an-error-about-non-exhaustive-patterns
+//https://doc.rust-lang.org/std/option/enum.Option.html
 
 extern "C" {
     pub fn sendMessage(client: u32, message: *const c_char);
@@ -36,7 +38,7 @@ pub extern "C" fn handle_client(client: u32, request: *const c_char) {
         file.push_str(seek_file.as_str());
     }
 
-    let f = File::open(file).expect("Unable to open file");
+    let f = File::open(file.as_str()).expect("Unable to open file");
     let mut data = BufReader::new(f);
     let mut contents = Vec::new();
     let _ = data.read_to_end(&mut contents).expect("Unable to read string");
@@ -46,11 +48,15 @@ pub extern "C" fn handle_client(client: u32, request: *const c_char) {
     build_message.push_str(&contents.len().to_string());
     build_message.push_str("\r\n");
 
-    let last_four = &seek_file[..4];
+    //let last_four = &seek_file[..4];
 
-    match last_four {
-        ".png" => build_message.push_str("Content-Type: image/png\r\n"),
-        ".ico" => build_message.push_str("Content-Type: image/x-icon\r\n"),
+    let p = Path::new(file.as_str()).extension().unwrap().to_str().unwrap();
+
+    println!("{:?}", p);
+
+    match p {
+        "png" => build_message.push_str("Content-Type: image/png\r\n"),
+        "ico" => build_message.push_str("Content-Type: image/x-icon\r\n"),
         "html" => build_message.push_str("Content-Type: text/html\r\n"),
         _ => println!("Unknown"),
     }
