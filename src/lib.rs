@@ -10,6 +10,10 @@ use std::os::raw::c_char;
 
 //https://stackoverflow.com/questions/24145823/rust-ffi-c-string-handling
 //https://jvns.ca/blog/2016/01/18/calling-c-from-rust/
+//https://stackoverflow.com/questions/25383488/how-to-match-a-string-against-string-literals-in-rust
+//https://www.reddit.com/r/rust/comments/3t2pmy/how_do_i_get_the_last_two_characters_in_a_string/
+//https://users.rust-lang.org/t/how-to-get-a-substring-of-a-string/1351
+//https://stackoverflow.com/questions/41037114/why-do-i-get-an-error-about-non-exhaustive-patterns
 
 extern "C" {
     pub fn sendMessage(client: u32, message: *const c_char);
@@ -36,60 +40,32 @@ pub extern "C" fn handle_client(client: u32, request: *const c_char) {
     let mut data = BufReader::new(f);
     let mut contents = Vec::new();
     let _ = data.read_to_end(&mut contents).expect("Unable to read string");
-    // send http version
-    let http_version = CString::new("HTTP/1.0 200 OK\r\n").unwrap();
-    unsafe {
-        sendMessage(client, http_version.as_ptr());
+
+    let mut build_message = String::from("HTTP/1.0 200 OK\r\nServer: Ingot\r\n");
+    build_message.push_str("Content-length: ");
+    build_message.push_str(&contents.len().to_string());
+    build_message.push_str("\r\n");
+
+    let last_four = &seek_file[..4];
+
+    match last_four {
+        ".png" => build_message.push_str("Content-Type: image/png\r\n"),
+        ".ico" => build_message.push_str("Content-Type: image/x-icon\r\n"),
+        "html" => build_message.push_str("Content-Type: text/html\r\n"),
+        _ => println!("Unknown"),
     }
 
-    // Server
-    let http_version = CString::new("Server: Ingot\r\n").unwrap();
+    build_message.push_str("Connection: close\r\n\r\n");
+
+    let send_message = CString::new(build_message).unwrap();
     unsafe {
-        sendMessage(client, http_version.as_ptr());
+        sendMessage(client, send_message.as_ptr());
     }
 
-    // send content length
-    let mut foo = "Content-length: ".to_string();
-    foo.push_str(&contents.len().to_string());
-    foo.push_str("\r\n");
-    //let content_length = CString::from(foo.as_str().unwrap()).unwrap();
-    let content_length = CString::new(foo).unwrap();
+    let data_length = contents.len();
     unsafe {
-        sendMessage(client, content_length.as_ptr());
-    }
-
-    // send content type
-    // TODO: Get filetype by copying from buffer, won't need to do checks
-    if seek_file == "/favicon.ico" {
-        let http_version = CString::new("Content-Type: image/x-icon\r\n").unwrap();
-        unsafe {
-            sendMessage(client, http_version.as_ptr());
-        }
-        //t_stream.write(&http_version.into_bytes()).unwrap();
-    } else {
-        let http_version = CString::new("Content-Type: text/html\r\n").unwrap();
-        unsafe {
-            sendMessage(client, http_version.as_ptr());
-        }
-        //t_stream.write(&http_version.into_bytes()).unwrap();
-    }
-
-    let http_version = CString::new("Content-Type: text/html\r\n").unwrap();
-    unsafe {
-        sendMessage(client, http_version.as_ptr());
-    }
-
-    // send connection close
-    let http_version = CString::new("Connection: close\r\n\r\n").unwrap();
-    unsafe {
-        sendMessage(client, http_version.as_ptr());
-    }
-    let contents_num = contents.len();
-    unsafe {
-        let send_test = CString::from_vec_unchecked(contents);
-
-        // send data
-        sendData(client, send_test.as_ptr(), contents_num);
+        let send_data = CString::from_vec_unchecked(contents);
+        sendData(client, send_data.as_ptr(), data_length);
     }
     unsafe {
         shutdownClient(client);

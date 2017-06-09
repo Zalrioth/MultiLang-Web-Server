@@ -3,7 +3,6 @@ import std.concurrency;
 import std.file;
 import std.json;
 import std.conv : to;
-import core.thread;
 
 //https://stackoverflow.com/questions/1630597/how-to-use-a-c-library-from-d
 //https://stackoverflow.com/questions/10062750/call-cc-from-d-language
@@ -101,8 +100,6 @@ extern (C) int checkCache(int client, char[] request)
 {
     string getRequest = to!string(request.ptr);
 
-    //writeln("\x1B[31m" ~ "d side request is: " ~ getRequest ~ " for client " ~ to!string(client) ~ "\x1B[37m");
-
     char* data;
     long dataLength;
 
@@ -120,8 +117,8 @@ extern (C) int checkCache(int client, char[] request)
         return -1;
     }
 
-    char[] sending = ("HTTP/1.0 200 OK\r\n" ~ "Server: Ingot\r\n" ~ "Content-length: " ~ to!string(dataLength)~ "\r\n"
-    ~ "Content-Type: text/html\r\n" ~ "Connection: close\r\n\r\n").dup;
+    char[] sending = ("HTTP/1.0 200 OK\r\nServer: Ingot\r\nContent-length: "
+    ~ to!string(dataLength) ~ "\r\nContent-Type: text/html\r\nConnection: close\r\n\r\n").dup;
 
     sendMessage(client, sending.ptr);
     sendData(client, data, dataLength);
