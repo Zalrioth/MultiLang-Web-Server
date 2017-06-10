@@ -1,5 +1,5 @@
 # MultiLang-Web-Server
-Web server in D, C, and Rust.
+Web server in C, D, and Rust.
 
 Currently only for Linux, other operating systems are planned.
 

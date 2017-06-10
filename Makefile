@@ -1,9 +1,3 @@
-ifeq ($(shell uname),Darwin)
-    LDFLAGS := -Wl,-dead_strip -ldl
-else
-    LDFLAGS := -Wl,--gc-sections -lpthread -ldl
-endif
-
 all: clean target/server
 	./main
 
