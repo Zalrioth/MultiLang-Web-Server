@@ -16,6 +16,9 @@ use std::os::raw::c_char;
 //https://users.rust-lang.org/t/how-to-get-a-substring-of-a-string/1351
 //https://stackoverflow.com/questions/41037114/why-do-i-get-an-error-about-non-exhaustive-patterns
 //https://doc.rust-lang.org/std/option/enum.Option.html
+//https://en.wikipedia.org/wiki/List_of_HTTP_status_codes
+//https://rustbyexample.com/flow_control/match.html
+//http://php.net/manual/en/function.mime-content-type.php
 
 extern "C" {
     pub fn sendMessage(client: u32, message: *const c_char);
@@ -31,6 +34,8 @@ pub extern "C" fn handle_client(client: u32, request: *const c_char) {
 
     println!("\x1B[36mRead from disk: {:?}\x1B[37m", seek_file);
 
+    let mut build_message = String::from("HTTP/1.0 ");
+
     let mut file = String::from("html");
     if seek_file == "/" {
         file.push_str("/index.html");
@@ -38,41 +43,106 @@ pub extern "C" fn handle_client(client: u32, request: *const c_char) {
         file.push_str(seek_file.as_str());
     }
 
-    let f = File::open(file.as_str()).expect("Unable to open file");
-    let mut data = BufReader::new(f);
-    let mut contents = Vec::new();
-    let _ = data.read_to_end(&mut contents).expect("Unable to read string");
+    let p = Path::new(file.as_str());
 
-    let mut build_message = String::from("HTTP/1.0 200 OK\r\nServer: Ingot\r\n");
-    build_message.push_str("Content-length: ");
-    build_message.push_str(&contents.len().to_string());
-    build_message.push_str("\r\n");
+    if p.exists() {
+        let pl = p.extension()
+            .unwrap()
+            .to_str()
+            .unwrap();
 
-    //let last_four = &seek_file[..4];
+        let f = File::open(file.as_str()).expect("Unable to open file");
+        let mut data = BufReader::new(f);
+        let mut contents = Vec::new();
+        let _ = data.read_to_end(&mut contents).expect("Unable to read string");
 
-    let p = Path::new(file.as_str()).extension().unwrap().to_str().unwrap();
+        build_message.push_str("200 OK\r\n");
+        build_message.push_str("Content-length: ");
+        build_message.push_str(&contents.len().to_string());
+        build_message.push_str("\r\n");
+        build_message.push_str("Server: Ingot\r\n");
 
-    println!("{:?}", p);
+        println!("{:?}", p);
 
-    match p {
-        "png" => build_message.push_str("Content-Type: image/png\r\n"),
-        "ico" => build_message.push_str("Content-Type: image/x-icon\r\n"),
-        "html" => build_message.push_str("Content-Type: text/html\r\n"),
-        _ => println!("Unknown"),
+         build_message.push_str(match pl {
+            "txt" => "text/plain",
+            "htm" => "text/html",
+            "html" => "text/html",
+            "php" => "text/html",
+            "css" => "text/css",
+            "js" => "application/javascript",
+            "json" => "application/json",
+            "xml" => "application/xml",
+            "swf" => "application/x-shockwave-flash",
+            "flv" => "video/x-flv",
+
+            // images
+            "png" => "image/png",
+            "jpe" => "image/jpeg",
+            "jpeg" => "image/jpeg",
+            "jpg" => "image/jpeg",
+            "gif" => "image/gif",
+            "bmp" => "image/bmp",
+            "ico" => "image/vnd.microsoft.icon",
+            "tiff" => "image/tiff",
+            "tif" => "image/tiff",
+            "svg" => "image/svg+xml",
+            "svgz" => "image/svg+xml",
+
+            // archives
+            "zip" => "application/zip",
+            "rar" => "application/x-rar-compressed",
+            "exe" => "application/x-msdownload",
+            "msi" => "application/x-msdownload",
+            "cab" => "application/vnd.ms-cab-compressed",
+
+            // audio/video
+            "mp3" => "audio/mpeg",
+            "qt" => "video/quicktime",
+            "mov" => "video/quicktime",
+
+            // adobe
+            "pdf" => "application/pdf",
+            "psd" => "image/vnd.adobe.photoshop",
+            "ai" => "application/postscript",
+            "eps" => "application/postscript",
+            "ps" => "application/postscript",
+
+            // ms office
+            "doc" => "application/msword",
+            "rtf" => "application/rtf",
+            "xls" => "application/vnd.ms-excel",
+            "ppt" => "application/vnd.ms-powerpoint",
+
+            // open office
+            "odt" => "application/vnd.oasis.opendocument.text",
+            "ods" => "application/vnd.oasis.opendocument.spreadsheet",
+            _ => "unknown/unknown",
+        });
+
+        build_message.push_str("Connection: close\r\n\r\n");
+
+        let send_message = CString::new(build_message).unwrap();
+        unsafe {
+            sendMessage(client, send_message.as_ptr());
+        }
+
+        let data_length = contents.len();
+        unsafe {
+            let send_data = CString::from_vec_unchecked(contents);
+            sendData(client, send_data.as_ptr(), data_length);
+        }
+    } else {
+        build_message.push_str("404 Not Found\r\n");
+        build_message.push_str("Server: Ingot\r\n");
+        build_message.push_str("Connection: close\r\n\r\n");
+
+        let send_message = CString::new(build_message).unwrap();
+        unsafe {
+            sendMessage(client, send_message.as_ptr());
+        }
     }
 
-    build_message.push_str("Connection: close\r\n\r\n");
-
-    let send_message = CString::new(build_message).unwrap();
-    unsafe {
-        sendMessage(client, send_message.as_ptr());
-    }
-
-    let data_length = contents.len();
-    unsafe {
-        let send_data = CString::from_vec_unchecked(contents);
-        sendData(client, send_data.as_ptr(), data_length);
-    }
     unsafe {
         shutdownClient(client);
     }
