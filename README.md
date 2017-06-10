@@ -1,5 +1,5 @@
 # MultiLang-Web-Server
-Web server in C, D, and Rust.
+A fast and small multi language web server written in C, D, and Rust.
 
 Currently only for Linux, other operating systems are planned.
 
