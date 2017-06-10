@@ -6,7 +6,6 @@ target:
 
 target/server: target/glue.o target/debug/libserver.a
 	dmd src/main.d $^ -L--no-as-needed -L-lpthread -L-ldl
-	
 
 target/debug/libserver.a: src/lib.rs Cargo.toml
 	cargo build
