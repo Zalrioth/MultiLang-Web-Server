@@ -65,6 +65,7 @@ pub extern "C" fn handle_client(client: u32, request: *const c_char) {
         println!("{:?}", p);
 
          build_message.push_str(match pl {
+             // General
             "txt" => "text/plain",
             "htm" => "text/html",
             "html" => "text/html",
@@ -76,7 +77,7 @@ pub extern "C" fn handle_client(client: u32, request: *const c_char) {
             "swf" => "application/x-shockwave-flash",
             "flv" => "video/x-flv",
 
-            // images
+            // Images
             "png" => "image/png",
             "jpe" => "image/jpeg",
             "jpeg" => "image/jpeg",
@@ -89,32 +90,32 @@ pub extern "C" fn handle_client(client: u32, request: *const c_char) {
             "svg" => "image/svg+xml",
             "svgz" => "image/svg+xml",
 
-            // archives
+            // Archives
             "zip" => "application/zip",
             "rar" => "application/x-rar-compressed",
             "exe" => "application/x-msdownload",
             "msi" => "application/x-msdownload",
             "cab" => "application/vnd.ms-cab-compressed",
 
-            // audio/video
+            // Audio/Video
             "mp3" => "audio/mpeg",
             "qt" => "video/quicktime",
             "mov" => "video/quicktime",
 
-            // adobe
+            // Adobe
             "pdf" => "application/pdf",
             "psd" => "image/vnd.adobe.photoshop",
             "ai" => "application/postscript",
             "eps" => "application/postscript",
             "ps" => "application/postscript",
 
-            // ms office
+            // MS Office
             "doc" => "application/msword",
             "rtf" => "application/rtf",
             "xls" => "application/vnd.ms-excel",
             "ppt" => "application/vnd.ms-powerpoint",
 
-            // open office
+            // Open Office
             "odt" => "application/vnd.oasis.opendocument.text",
             "ods" => "application/vnd.oasis.opendocument.spreadsheet",
             _ => "unknown/unknown",

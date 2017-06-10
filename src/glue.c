@@ -26,6 +26,7 @@
 //https://stackoverflow.com/questions/8874021/close-socket-directly-after-send-unsafe
 //https://github.com/labcoder/simple-webserver/blob/master/server.c
 //http://blog.manula.org/2011/05/writing-simple-web-server-in-c.html
+//https://stackoverflow.com/questions/21513666/how-to-free-memory-from-char-array-in-c
 
 extern void handle_client(int client, char request[]);
 extern int checkCache(int client, char request[]);
@@ -39,7 +40,7 @@ struct arg_struct {
 
 int runMain(short port)
 {
-	printf("Hello World from C!\n");
+    printf("Hello World from C!\n");
     printf("Starting server on port: %d\n", port);
 
     pthread_t tid;
@@ -96,6 +97,7 @@ void *transmitData(void *arguments)
     {
         handle_client(args->arg1, args->arg2);
     }
+    free(args);
 }
 
 void sendMessage(int client, char* message)
