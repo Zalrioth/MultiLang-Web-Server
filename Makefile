@@ -1,16 +1,22 @@
+ifeq ($(shell uname),Darwin)
+    LDFLAGS := -Wl,-dead_strip
+else
+    LDFLAGS := -Wl,--gc-sections -lpthread -ldl
+endif
+
 all: clean target/server
-	./main
+	target/server
 
 target:
 	mkdir -p $@
 
-target/server: target/glue.o target/debug/libserver.a
-	dmd src/main.d $^ -L--no-as-needed -L-lpthread -L-ldl
+target/server: target/main.o target/debug/libserver.a
+	dmd -of$@ src/cache.d src/module.d $^ -L--no-as-needed -L-lpthread -L-ldl
 
 target/debug/libserver.a: src/lib.rs Cargo.toml
 	cargo build
 
-target/glue.o: src/glue.c | target
+target/main.o: src/main.c | target
 	$(CC) -o $@ -c $<
 
 clean:
