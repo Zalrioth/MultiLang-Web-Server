@@ -17,10 +17,10 @@ extern "C" {
 }
 
 #[no_mangle]
-pub extern "C" fn handle_client(client: u32, command: *const c_char, request: *const c_char) {
+pub extern "C" fn handle_client(client: u32, command: *const c_char, get_file: *const c_char) {
 
     let seek_file: String =
-        unsafe { str::from_utf8(CStr::from_ptr(request).to_bytes()).unwrap().to_owned() };
+        unsafe { str::from_utf8(CStr::from_ptr(get_file).to_bytes()).unwrap().to_owned() };
 
     //println!("\x1B[36mRead from disk: {:?}\x1B[37m", seek_file);
 

@@ -12,56 +12,53 @@
 #include "queue.c"
 #include "io.c"
 
-extern int rt_init();
-extern int rt_term();
-extern int runMain();
-extern void getSettings(short *port, short *workers);
-extern void collectGarbage();
-
-void *processEvents(void *arguments);
-void transmitData(void *arguments);
-
-struct thread_struct
+typedef struct workerData
 {
     Queue *pQ;
     int runThread;
     pthread_mutex_t mutex;
     pthread_cond_t condition;
-};
+} WorkerData;
+
+void *processEvents(void *arguments);
+void transmitData(void *arguments);
+void startThread(WorkerData *threadHandle);
+void stopThread(WorkerData *threadHandle);
+
+extern int rt_init();
+extern int rt_term();
+extern int initSettings();
+extern int getPort();
+extern int getWorkers();
 
 int main()
 {
-    printf("Hello World from C!\n");
-
     short port;
     short workers;
 
-    long totalConnections = 0;
-
     rt_init();
-    runMain();
-    getSettings(&port, &workers);
+    initSettings();
+    port = getPort();
+    workers = getWorkers();
 
     printf("Starting server on port: %d workers: %d\n", port, workers);
-
-    struct thread_struct *thread_args[workers];
+    struct workerData thread_args[workers];
 
     pthread_t tid[workers];
 
     int loopNum;
     for (loopNum = 0; loopNum < workers; loopNum++)
     {
-        thread_args[loopNum] = malloc(sizeof(struct thread_struct));
-        thread_args[loopNum]->pQ = ConstructQueue();
-        thread_args[loopNum]->runThread = 0;
-        pthread_mutex_init(&(thread_args[loopNum]->mutex), NULL);
-        pthread_cond_init(&(thread_args[loopNum]->condition), NULL);
-        pthread_create(&tid[loopNum], NULL, (void *)&processEvents, (void *)thread_args[loopNum]);
+        thread_args[loopNum].pQ = ConstructQueue();
+        thread_args[loopNum].runThread = 0;
+        pthread_mutex_init(&(thread_args[loopNum].mutex), NULL);
+        pthread_cond_init(&(thread_args[loopNum].condition), NULL);
+        pthread_create(&tid[loopNum], NULL, (void *)&processEvents, (void *)&thread_args[loopNum]);
     }
 
     struct sockaddr_in dest;
     struct sockaddr_in serv;
-    int mysocket;
+
     socklen_t socksize = sizeof(struct sockaddr_in);
 
     memset(&serv, 0, sizeof(serv));
@@ -69,19 +66,38 @@ int main()
     serv.sin_addr.s_addr = htonl(INADDR_ANY);
     serv.sin_port = htons(port);
 
-    mysocket = socket(AF_INET, SOCK_STREAM, 0);
+    int tcpSocket = socket(AF_INET, SOCK_STREAM, 0);
+    if (tcpSocket < 0)
+    {
+        perror("Problem opening socket");
+        return 1;
+    }
 
-    bind(mysocket, (struct sockaddr *)&serv, sizeof(struct sockaddr));
-    listen(mysocket, 1000);
+    int option = 1;
+    setsockopt(tcpSocket, SOL_SOCKET, SO_REUSEADDR, &option, sizeof(option));
 
-    int swap = 0;
+    if (bind(tcpSocket, (struct sockaddr *)&serv, sizeof(struct sockaddr)) < 0)
+    {
+        close(tcpSocket);
+        perror("Problem binding socket");
+        return 1;
+    }
+
+    listen(tcpSocket, 128);
 
     while (1)
     {
+        int clientCon = accept(tcpSocket, (struct sockaddr *)&dest, &socksize);
+
+        if (clientCon == -1)
+        {
+            perror("Problem accepting client");
+            continue;
+        }
+
         struct arg_struct *args = malloc(sizeof(struct arg_struct));
-        args->command = malloc(sizeof(char) * 256);
-        args->request = malloc(sizeof(char) * 256);
-        args->connection = accept(mysocket, (struct sockaddr *)&dest, &socksize);
+        bzero(args->request, BUFFER_SIZE);
+        args->connection = clientCon;
 
         NODE *pN;
         pN = (NODE *)malloc(sizeof(NODE));
@@ -93,45 +109,30 @@ int main()
         int loopNum;
         for (loopNum = 0; loopNum < workers; loopNum++)
         {
-            if (isEmpty(thread_args[loopNum]->pQ))
-            {
-                EnqueueFirst(thread_args[loopNum]->pQ, pN);
-
-                pthread_mutex_lock(&(thread_args[loopNum]->mutex));
-                thread_args[loopNum]->runThread = 1;
-                pthread_cond_signal(&(thread_args[loopNum]->condition));
-                pthread_mutex_unlock(&(thread_args[loopNum]->mutex));
-
-                goto next;
-            }
-            else if (thread_args[loopNum]->pQ->size < sizeNum)
+            if (isEmpty(thread_args[loopNum].pQ))
             {
                 chooseNum = loopNum;
-                sizeNum = thread_args[loopNum]->pQ->size;
+                break;
+            }
+            else if (thread_args[loopNum].pQ->size < sizeNum)
+            {
+                chooseNum = loopNum;
+                sizeNum = thread_args[loopNum].pQ->size;
             }
         }
 
-        Enqueue(thread_args[chooseNum]->pQ, pN);
-
-        pthread_mutex_lock(&(thread_args[chooseNum]->mutex));
-        thread_args[chooseNum]->runThread = 1;
-        pthread_cond_signal(&(thread_args[chooseNum]->condition));
-        pthread_mutex_unlock(&(thread_args[chooseNum]->mutex));
-
-    next:;
-
-        if (totalConnections % 100 == 0)
-            collectGarbage();
-        totalConnections++;
+        Enqueue(thread_args[chooseNum].pQ, pN);
+        startThread(&thread_args[chooseNum]);
     }
 
+    close(tcpSocket);
     rt_term();
     return 0;
 }
 
 void *processEvents(void *arguments)
 {
-    struct thread_struct *thread_args = arguments;
+    struct workerData *thread_args = arguments;
 
     while (1)
     {
@@ -145,11 +146,24 @@ void *processEvents(void *arguments)
         }
         else
         {
-            pthread_mutex_lock(&(thread_args->mutex));
-            while (!thread_args->runThread)
-                pthread_cond_wait(&(thread_args->condition), &(thread_args->mutex));
-            thread_args->runThread = 0;
-            pthread_mutex_unlock(&(thread_args->mutex));
+            stopThread(thread_args);
         }
     }
+}
+
+void startThread(WorkerData *threadHandle)
+{
+    pthread_mutex_lock(&(threadHandle->mutex));
+    threadHandle->runThread = 1;
+    pthread_cond_signal(&(threadHandle->condition));
+    pthread_mutex_unlock(&(threadHandle->mutex));
+}
+
+void stopThread(WorkerData *threadHandle)
+{
+    pthread_mutex_lock(&(threadHandle->mutex));
+    while (!threadHandle->runThread)
+        pthread_cond_wait(&(threadHandle->condition), &(threadHandle->mutex));
+    threadHandle->runThread = 0;
+    pthread_mutex_unlock(&(threadHandle->mutex));
 }

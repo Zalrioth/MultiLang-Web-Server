@@ -4,21 +4,6 @@
     <a href="/about.html">about button</a>
     <a href="/echo.php">php button</a>
     <img src="test.png">
-    <img src="test2.png">
 </body>
 <li><a href="#" data-xpaystation-widget-open>Get zCoins</a></li>
 </html>
-<script>
-            var options = {
-                access_token: "<?php echo $token; ?>" //TODO use access token, received on previous step
-            };
-            var s = document.createElement('script');
-            s.type = "text/javascript";
-            s.async = true;
-            s.src = "https://static.xsolla.com/embed/paystation/1.0.4/widget.min.js";
-            s.addEventListener('load', function (e) {
-                XPayStationWidget.init(options);
-            }, false);
-            var head = document.getElementsByTagName('head')[0];
-            head.appendChild(s);
-        </script>

@@ -44,17 +44,16 @@ void DestructQueue(Queue *queue)
 int Enqueue(Queue *pQueue, NODE *item)
 {
     item->prev = NULL;
-    pQueue->tail->prev = item;
-    pQueue->tail = item;
-    pQueue->size++;
-    return TRUE;
-}
-
-int EnqueueFirst(Queue *pQueue, NODE *item)
-{
-    item->prev = NULL;
-    pQueue->head = item;
-    pQueue->tail = item;
+    if (pQueue->size == 0)
+    {
+        pQueue->head = item;
+        pQueue->tail = item;
+    }
+    else
+    {
+        pQueue->tail->prev = item;
+        pQueue->tail = item;
+    }
     pQueue->size++;
     return TRUE;
 }
