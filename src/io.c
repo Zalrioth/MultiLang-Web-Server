@@ -1,4 +1,4 @@
-extern void handle_client(int client, char *command, char *getFile);
+extern void handle_client(int client, char *command, char *getFile, char *host);
 
 #define BUFFER_SIZE 4096
 
@@ -8,7 +8,7 @@ struct arg_struct
     char request[BUFFER_SIZE];
 };
 
-void transmitData(void *arguments)
+int transmitData(void *arguments, List *hostList)
 {
     struct arg_struct *args = arguments;
     read(args->connection, args->request, BUFFER_SIZE - 1);
@@ -22,12 +22,18 @@ void transmitData(void *arguments)
 
     while (headerToken)
     {
-        if (strcmp(headerToken, "Host:") == 0)
+        /*if (strcmp(headerToken, "Host:") == 0)
             host = strtok(NULL, "\n");
         else if (strcmp(headerToken, "Accept-Encoding:") == 0)
             encoding = strtok(NULL, "\n");
         else
-            strtok(NULL, "\n");
+            strtok(NULL, "\n");*/
+
+        if (strcmp(headerToken, "Host:") == 0)
+            host = strtok(NULL, "\r");
+        else if (strcmp(headerToken, "Accept-Encoding:") == 0)
+            encoding = strtok(NULL, "\r");
+        strtok(NULL, "\n");
 
         headerToken = strtok(NULL, " ");
     }
@@ -37,9 +43,24 @@ void transmitData(void *arguments)
     printf("host: %s\n", host);
     printf("encoding: %s\n", encoding);*/
 
-    handle_client(args->connection, command, getFile);
+    //char *findFile = (char *)malloc(sizeof(char) * 1024);
+    //strcpy(findFile, Check(hostList, host));
+    //strcat(findFile, getFile);
+
+    //printf("wants ~%s~\n", host);
+    //printf("found ~%s~\n", Check(hostList, host));
+    //printf("searching for %s\n", host);
+    if (!host)
+        host = "hellodomain";
+
+    if (command && getFile)
+        handle_client(args->connection, command, getFile, Check(hostList, host));
+    else
+        return 1;
 
     free(args);
+
+    return 0;
 }
 
 void sendMessage(int client, char *message)

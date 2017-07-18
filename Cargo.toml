@@ -4,6 +4,7 @@ version = "0.1.0"
 authors = ["Zalrioth <nicholasbedner@gmail.com>"]
 
 [dependencies]
+lazy_static = "0.2.8"
 
 [lib]
 name = "server"

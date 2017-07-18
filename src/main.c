@@ -10,24 +10,27 @@
 #include <pthread.h>
 #include <limits.h>
 #include "queue.c"
+#include "list.c"
 #include "io.c"
 
 typedef struct workerData
 {
     Queue *pQ;
+    List *hostList;
     int runThread;
     pthread_mutex_t mutex;
     pthread_cond_t condition;
 } WorkerData;
 
 void *processEvents(void *arguments);
-void transmitData(void *arguments);
+int transmitData(void *arguments, List *hostList);
 void startThread(WorkerData *threadHandle);
 void stopThread(WorkerData *threadHandle);
+void addHost(void *listPointer, char *host, char *folder);
 
 extern int rt_init();
 extern int rt_term();
-extern int initSettings();
+extern int initSettings(void *hostHost);
 extern int getPort();
 extern int getWorkers();
 
@@ -36,10 +39,18 @@ int main()
     short port;
     short workers;
 
+    List *hostHost = ConstructList();
+
     rt_init();
-    initSettings();
+    if (initSettings(hostHost) == 1)
+    {
+        perror("Exiting: Could not loading settings.");
+        return 1;
+    }
     port = getPort();
     workers = getWorkers();
+
+    hostHost->defaultFolder = Check(hostHost, "localhost");
 
     printf("Starting server on port: %d workers: %d\n", port, workers);
     struct workerData thread_args[workers];
@@ -50,6 +61,7 @@ int main()
     for (loopNum = 0; loopNum < workers; loopNum++)
     {
         thread_args[loopNum].pQ = ConstructQueue();
+        thread_args[loopNum].hostList = hostHost;
         thread_args[loopNum].runThread = 0;
         pthread_mutex_init(&(thread_args[loopNum].mutex), NULL);
         pthread_cond_init(&(thread_args[loopNum].condition), NULL);
@@ -69,7 +81,7 @@ int main()
     int tcpSocket = socket(AF_INET, SOCK_STREAM, 0);
     if (tcpSocket < 0)
     {
-        perror("Problem opening socket");
+        perror("Problem opening socket.");
         return 1;
     }
 
@@ -79,7 +91,7 @@ int main()
     if (bind(tcpSocket, (struct sockaddr *)&serv, sizeof(struct sockaddr)) < 0)
     {
         close(tcpSocket);
-        perror("Problem binding socket");
+        perror("Problem binding socket.");
         return 1;
     }
 
@@ -89,11 +101,9 @@ int main()
     {
         int clientCon = accept(tcpSocket, (struct sockaddr *)&dest, &socksize);
 
+        //Problem accepting client
         if (clientCon == -1)
-        {
-            perror("Problem accepting client");
             continue;
-        }
 
         struct arg_struct *args = malloc(sizeof(struct arg_struct));
         bzero(args->request, BUFFER_SIZE);
@@ -130,6 +140,24 @@ int main()
     return 0;
 }
 
+void addHost(void *listPointer, char *host, char *folder)
+{
+    struct List *hostHost = listPointer;
+
+    char *hostHold = (char *)malloc(strlen(host) * sizeof(char));
+    strcpy(hostHold, host);
+
+    char *folderHold = (char *)malloc(strlen(folder) * sizeof(char));
+    strcpy(folderHold, folder);
+
+    NODEL *pL;
+    pL = (NODEL *)malloc(sizeof(NODEL));
+    pL->key = hostHold;
+    pL->value = folderHold;
+
+    Insert(hostHost, pL);
+}
+
 void *processEvents(void *arguments)
 {
     struct workerData *thread_args = arguments;
@@ -141,7 +169,7 @@ void *processEvents(void *arguments)
         if (!isEmpty(pQ))
         {
             NODE *pN = Dequeue(pQ);
-            transmitData(pN->args);
+            transmitData(pN->args, thread_args->hostList);
             free(pN);
         }
         else

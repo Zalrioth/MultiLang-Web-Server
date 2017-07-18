@@ -3,6 +3,8 @@
         "string.h": "c",
         "stdio.h": "c",
         "vcruntime.h": "c",
-        "corecrt.h": "c"
+        "corecrt.h": "c",
+        "corecrt_malloc.h": "c",
+        "stdlib.h": "c"
     }
 }

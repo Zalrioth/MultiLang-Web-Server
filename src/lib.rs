@@ -17,17 +17,26 @@ extern "C" {
 }
 
 #[no_mangle]
-pub extern "C" fn handle_client(client: u32, command: *const c_char, get_file: *const c_char) {
+pub extern "C" fn handle_client(client: u32,
+                                command: *const c_char,
+                                get_file: *const c_char,
+                                host: *const c_char) {
 
     let seek_file: String =
         unsafe { str::from_utf8(CStr::from_ptr(get_file).to_bytes()).unwrap().to_owned() };
+
+    let host_folder: String =
+        unsafe { str::from_utf8(CStr::from_ptr(host).to_bytes()).unwrap().to_owned() };
 
     //println!("\x1B[36mRead from disk: {:?}\x1B[37m", seek_file);
 
     let mut build_message = String::new();
     let mut contents = Vec::new();
 
-    let mut file = String::from("html");
+    let mut file = String::from("html/");
+
+    file.push_str(host_folder.as_str());
+
     if seek_file == "/" {
         file.push_str("/index.html");
     } else {
