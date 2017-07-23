@@ -6,23 +6,12 @@ import std.regex;
 import std.array;
 import std.conv : to;
 
-struct Settings
-{
-    short port;
-    short workers;
-}
+extern (C) void add_host(void *listPointer, char *host, char *folder);
 
-shared Settings settings;
-
-extern (C) void addHost(void *listPointer, char *host, char *folder);
-
-extern (C) int initSettings(void *listPointer)
+extern (C) int initSettings(void *listPointer, short *port, short *workers)
 {
     GC.disable;
     
-    settings.port = 80;
-    settings.workers = 1;
-
     string settingsContent;
 
     try
@@ -46,12 +35,12 @@ extern (C) int initSettings(void *listPointer)
                 immutable JSONValue workerCheck = dataJSON["Workers"];
 
                 if (portCheck.type() == JSON_TYPE.INTEGER)
-                    settings.port = cast(short) portCheck.integer;
+                    *port = cast(short) portCheck.integer;
                 else
                     writeln("Error: Incorrect port format, defaulting to 8808.");
 
                 if (workerCheck.type() == JSON_TYPE.INTEGER)
-                    settings.workers = cast(short) workerCheck.integer;
+                    *workers = cast(short) workerCheck.integer;
                 else
                      writeln("Error: Incorrect worker format, defaulting to 1.");
             }
@@ -65,7 +54,7 @@ extern (C) int initSettings(void *listPointer)
                     immutable string hostString = host.str ~ "\0";
                     immutable string folderString = folderCheck.str ~ "\0";
 
-                    addHost(listPointer, cast(char*)hostString.ptr, cast(char*)folderString.ptr);
+                    add_host(listPointer, cast(char*)hostString.ptr, cast(char*)folderString.ptr);
                 }
             }
         }
@@ -79,13 +68,4 @@ extern (C) int initSettings(void *listPointer)
     GC.collect();
 
     return 0;
-}
-
-extern (C) short getPort()
-{
-    return settings.port;
-}
-extern (C) short getWorkers()
-{
-    return settings.workers;
 }

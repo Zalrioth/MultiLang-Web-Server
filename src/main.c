@@ -9,48 +9,36 @@
 #include <sys/socket.h>
 #include <pthread.h>
 #include <limits.h>
-#include "queue.c"
-#include "list.c"
-#include "io.c"
+#include "datastructs/queue.c"
+#include "datastructs/list.c"
+#include "core/io.c"
+#include "core/worker.c"
 
-typedef struct workerData
-{
-    Queue *pQ;
-    List *hostList;
-    int runThread;
-    pthread_mutex_t mutex;
-    pthread_cond_t condition;
-} WorkerData;
-
-void *processEvents(void *arguments);
-int transmitData(void *arguments, List *hostList);
-void startThread(WorkerData *threadHandle);
-void stopThread(WorkerData *threadHandle);
-void addHost(void *listPointer, char *host, char *folder);
+void *process_events(void *arguments);
+int transmit_data(void *arguments, List *hostList);
+void start_thread(WorkerData *threadHandle);
+void stop_thread(WorkerData *threadHandle);
+void add_host(void *listPointer, char *host, char *folder);
 
 extern int rt_init();
 extern int rt_term();
-extern int initSettings(void *hostHost);
-extern int getPort();
-extern int getWorkers();
+extern int initSettings(void *hostList, short *port, short *workers);
 
 int main()
 {
-    short port;
-    short workers;
+    short port = 80;
+    short workers = 1;
 
-    List *hostHost = ConstructList();
+    List *hostList = construct_list();
 
     rt_init();
-    if (initSettings(hostHost) == 1)
+    if (initSettings(hostList, &port, &workers) == 1)
     {
-        perror("Exiting: Could not loading settings.");
+        perror("Exiting: Could not load settings.");
         return 1;
     }
-    port = getPort();
-    workers = getWorkers();
 
-    hostHost->defaultFolder = Check(hostHost, "localhost");
+    hostList->defaultFolder = check(hostList, "localhost");
 
     printf("Starting server on port: %d workers: %d\n", port, workers);
     struct workerData thread_args[workers];
@@ -60,12 +48,12 @@ int main()
     int loopNum;
     for (loopNum = 0; loopNum < workers; loopNum++)
     {
-        thread_args[loopNum].pQ = ConstructQueue();
-        thread_args[loopNum].hostList = hostHost;
+        thread_args[loopNum].taskQueue = construct_queue();
+        thread_args[loopNum].hostList = hostList;
         thread_args[loopNum].runThread = 0;
         pthread_mutex_init(&(thread_args[loopNum].mutex), NULL);
         pthread_cond_init(&(thread_args[loopNum].condition), NULL);
-        pthread_create(&tid[loopNum], NULL, (void *)&processEvents, (void *)&thread_args[loopNum]);
+        pthread_create(&tid[loopNum], NULL, (void *)&process_events, (void *)&thread_args[loopNum]);
     }
 
     struct sockaddr_in dest;
@@ -109,9 +97,9 @@ int main()
         bzero(args->request, BUFFER_SIZE);
         args->connection = clientCon;
 
-        NODE *pN;
-        pN = (NODE *)malloc(sizeof(NODE));
-        pN->args = args;
+        NODE_QUEUE *taskNode;
+        taskNode = (NODE_QUEUE *)malloc(sizeof(NODE_QUEUE));
+        taskNode->args = args;
 
         int chooseNum = 0;
         int sizeNum = INT_MAX;
@@ -119,20 +107,20 @@ int main()
         int loopNum;
         for (loopNum = 0; loopNum < workers; loopNum++)
         {
-            if (isEmpty(thread_args[loopNum].pQ))
+            if (is_empty(thread_args[loopNum].taskQueue))
             {
                 chooseNum = loopNum;
                 break;
             }
-            else if (thread_args[loopNum].pQ->size < sizeNum)
+            else if (thread_args[loopNum].taskQueue->size < sizeNum)
             {
                 chooseNum = loopNum;
-                sizeNum = thread_args[loopNum].pQ->size;
+                sizeNum = thread_args[loopNum].taskQueue->size;
             }
         }
 
-        Enqueue(thread_args[chooseNum].pQ, pN);
-        startThread(&thread_args[chooseNum]);
+        enqueue(thread_args[chooseNum].taskQueue, taskNode);
+        start_thread(&thread_args[chooseNum]);
     }
 
     close(tcpSocket);
@@ -140,9 +128,9 @@ int main()
     return 0;
 }
 
-void addHost(void *listPointer, char *host, char *folder)
+void add_host(void *listPointer, char *host, char *folder)
 {
-    struct List *hostHost = listPointer;
+    struct List *hostList = listPointer;
 
     char *hostHold = (char *)malloc(strlen(host) * sizeof(char));
     strcpy(hostHold, host);
@@ -150,48 +138,32 @@ void addHost(void *listPointer, char *host, char *folder)
     char *folderHold = (char *)malloc(strlen(folder) * sizeof(char));
     strcpy(folderHold, folder);
 
-    NODEL *pL;
-    pL = (NODEL *)malloc(sizeof(NODEL));
-    pL->key = hostHold;
-    pL->value = folderHold;
+    NODE_LIST *hostNode;
+    hostNode = (NODE_LIST *)malloc(sizeof(NODE_LIST));
+    hostNode->key = hostHold;
+    hostNode->value = folderHold;
 
-    Insert(hostHost, pL);
+    insert(hostList, hostNode);
 }
 
-void *processEvents(void *arguments)
+void *process_events(void *arguments)
 {
     struct workerData *thread_args = arguments;
 
     while (1)
     {
-        Queue *pQ = thread_args->pQ;
+        Queue *taskQueue = thread_args->taskQueue;
 
-        if (!isEmpty(pQ))
+        if (!is_empty(taskQueue))
         {
-            NODE *pN = Dequeue(pQ);
-            transmitData(pN->args, thread_args->hostList);
-            free(pN);
+            NODE_QUEUE *taskNode = dequeue(taskQueue);
+
+            transmit_data(taskNode->args, thread_args->hostList);
+            free(taskNode);
         }
         else
         {
-            stopThread(thread_args);
+            stop_thread(thread_args);
         }
     }
-}
-
-void startThread(WorkerData *threadHandle)
-{
-    pthread_mutex_lock(&(threadHandle->mutex));
-    threadHandle->runThread = 1;
-    pthread_cond_signal(&(threadHandle->condition));
-    pthread_mutex_unlock(&(threadHandle->mutex));
-}
-
-void stopThread(WorkerData *threadHandle)
-{
-    pthread_mutex_lock(&(threadHandle->mutex));
-    while (!threadHandle->runThread)
-        pthread_cond_wait(&(threadHandle->condition), &(threadHandle->mutex));
-    threadHandle->runThread = 0;
-    pthread_mutex_unlock(&(threadHandle->mutex));
 }

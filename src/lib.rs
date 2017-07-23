@@ -11,9 +11,9 @@ use std::os::raw::c_char;
 use std::process::Command;
 
 extern "C" {
-    pub fn sendMessage(client: u32, message: *const c_char);
-    pub fn sendData(client: u32, message: *const c_char, length: usize);
-    pub fn shutdownClient(client: u32);
+    pub fn send_message(client: u32, message: *const c_char) -> i32;
+    pub fn send_data(client: u32, message: *const c_char, length: usize) -> i32;
+    pub fn shutdown_client(client: u32);
 }
 
 #[no_mangle]
@@ -132,11 +132,13 @@ pub extern "C" fn handle_client(client: u32,
     build_message.push_str("Connection: close\r\n\r\n");
 
     unsafe {
-        let send_message = CString::new(build_message).unwrap();
-        sendMessage(client, send_message.as_ptr());
-        let content_length = contents.len();
-        let send_data = CString::from_vec_unchecked(contents);
-        sendData(client, send_data.as_ptr(), content_length);
-        shutdownClient(client);
+        let send_message_bits = CString::new(build_message).unwrap();
+        if send_message(client, send_message_bits.as_ptr()) == 0 {
+            let content_length = contents.len();
+            let send_data_bits = CString::from_vec_unchecked(contents);
+            if send_data(client, send_data_bits.as_ptr(), content_length) == 0 {
+                shutdown_client(client);
+            }
+        }
     }
 }
