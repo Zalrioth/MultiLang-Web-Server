@@ -8,7 +8,6 @@ use std::io::BufReader;
 use std::ffi::CString;
 use std::ffi::CStr;
 use std::os::raw::c_char;
-use std::process::Command;
 
 extern "C" {
     pub fn send_message(client: u32, message: *const c_char) -> i32;
@@ -115,12 +114,6 @@ pub extern "C" fn handle_client(client: u32,
                                    "ods" => "application/vnd.oasis.opendocument.spreadsheet",
                                    _ => "unknown/unknown",
                                });
-
-        if pl == "php" {
-            let output =
-                Command::new("php").arg(file.as_str()).output().expect("failed to execute process");
-            contents = output.stdout;
-        }
     } else {
         build_message.push_str("HTTP/1.0 404 Not Found\r\n");
     }

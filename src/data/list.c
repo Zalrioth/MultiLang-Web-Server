@@ -1,20 +1,4 @@
-typedef struct Node_List
-{
-    struct Node_List *next;
-    char *key;
-    char *value;
-} NODE_LIST;
-
-typedef struct List
-{
-    NODE_LIST *next;
-    int size;
-    char *defaultFolder;
-} List;
-
-List *construct_list();
-void destruct_list(List *listHandle);
-int insert(List *listHandle, NODE_LIST *item);
+#include "list.h"
 
 List *construct_list()
 {
@@ -25,9 +9,19 @@ List *construct_list()
     return list;
 }
 
-destruct_list(List *listHandle)
+void destruct_list(List *listHandle)
 {
-    // TODO
+    NODE_LIST *current = listHandle->next;
+    NODE_LIST *next;
+
+    while (current != NULL)
+    {
+        next = current->next;
+        free(current);
+        current = next;
+    }
+
+    free(listHandle);
 }
 
 int insert(List *listHandle, NODE_LIST *item)

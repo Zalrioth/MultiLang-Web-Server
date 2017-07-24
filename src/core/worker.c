@@ -1,11 +1,26 @@
-typedef struct workerData
+#include "worker.h"
+
+void *process_events(void *arguments)
 {
-    Queue *taskQueue;
-    List *hostList;
-    int runThread;
-    pthread_mutex_t mutex;
-    pthread_cond_t condition;
-} WorkerData;
+    struct workerData *thread_args = arguments;
+
+    while (1)
+    {
+        Queue *taskQueue = thread_args->taskQueue;
+
+        if (!is_empty(taskQueue))
+        {
+            NODE_QUEUE *taskNode = dequeue(taskQueue);
+
+            transmit_data(taskNode->args, thread_args->hostList);
+            free(taskNode);
+        }
+        else
+        {
+            stop_thread(thread_args);
+        }
+    }
+}
 
 void start_thread(WorkerData *threadHandle)
 {

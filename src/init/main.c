@@ -9,15 +9,13 @@
 #include <sys/socket.h>
 #include <pthread.h>
 #include <limits.h>
-#include "datastructs/queue.c"
-#include "datastructs/list.c"
-#include "core/io.c"
-#include "core/worker.c"
 
-void *process_events(void *arguments);
-int transmit_data(void *arguments, List *hostList);
-void start_thread(WorkerData *threadHandle);
-void stop_thread(WorkerData *threadHandle);
+#include "../data/queue.h"
+#include "../data/list.h"
+
+#include "../core/io.h"
+#include "../core/worker.h"
+
 void add_host(void *listPointer, char *host, char *folder);
 
 extern int rt_init();
@@ -144,26 +142,4 @@ void add_host(void *listPointer, char *host, char *folder)
     hostNode->value = folderHold;
 
     insert(hostList, hostNode);
-}
-
-void *process_events(void *arguments)
-{
-    struct workerData *thread_args = arguments;
-
-    while (1)
-    {
-        Queue *taskQueue = thread_args->taskQueue;
-
-        if (!is_empty(taskQueue))
-        {
-            NODE_QUEUE *taskNode = dequeue(taskQueue);
-
-            transmit_data(taskNode->args, thread_args->hostList);
-            free(taskNode);
-        }
-        else
-        {
-            stop_thread(thread_args);
-        }
-    }
 }

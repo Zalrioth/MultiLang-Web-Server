@@ -1,12 +1,4 @@
-extern void handle_client(int client, char *command, char *getFile, char *host);
-
-#define BUFFER_SIZE 4096
-
-struct arg_struct
-{
-    int connection;
-    char request[BUFFER_SIZE];
-};
+#include "io.h"
 
 int transmit_data(void *arguments, List *hostList)
 {

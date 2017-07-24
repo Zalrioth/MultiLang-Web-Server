@@ -5,6 +5,16 @@
         "vcruntime.h": "c",
         "corecrt.h": "c",
         "corecrt_malloc.h": "c",
-        "stdlib.h": "c"
+        "stdlib.h": "c",
+        "io.h": "c",
+        "worker.h": "c",
+        "queue.h": "c",
+        "list.h": "c",
+        "limits.h": "c",
+        "stdint.h": "c",
+        "corecrt_io.h": "c",
+        "corecrt_wio.h": "c",
+        "types.h": "c",
+        "core.h": "c"
     }
 }
